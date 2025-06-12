@@ -1,0 +1,166 @@
+@model aspnet.Models.SupportTicket
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+@{
+    ViewData["Title"] = $"Talep #{Model.TicketNumber}";
+    var isAdmin = (await AuthorizationService.AuthorizeAsync(User, "Admin")).Succeeded;
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Ana Sayfa</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Destek Talepleri</a></li>
+            <li class="breadcrumb-item active">Talep #@Model.TicketNumber</li>
+        </ol>
+    </nav>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 mb-0">@Model.Subject</h1>
+                        <span class="badge bg-@(Model.Status switch {
+                            "Open" => "success",
+                            "Waiting" => "warning",
+                            "Answered" => "info",
+                            "Closed" => "secondary",
+                            _ => "secondary"
+                        })">
+                            @Model.Status
+                        </span>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>İlk Mesaj</h6>
+                        <p class="mb-2">@Model.Message</p>
+                        <small class="text-muted">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                    </div>
+
+                    @if (Model.Messages.Any())
+                    {
+                        <hr />
+                        <h6 class="mb-3">Yanıtlar</h6>
+                        
+                        foreach (var message in Model.Messages.OrderBy(m => m.CreatedAt))
+                        {
+                            <div class="mb-3 @(message.IsStaffReply ? "ms-4" : "")">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge bg-@(message.IsStaffReply ? "info" : "secondary") mb-2">
+                                            @(message.IsStaffReply ? "Destek Ekibi" : "Siz")
+                                        </span>
+                                        <p class="mb-1">@message.Message</p>
+                                        <small class="text-muted">@message.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @if (Model.Status != "Closed")
+                    {
+                        <hr />
+                        <form asp-action="Reply" method="post" class="mt-4">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ticketId" value="@Model.Id" />
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Yanıtınız</label>
+                                <textarea name="message" class="form-control" rows="3" required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Yanıtla
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Talep Bilgileri</h5>
+                    <p class="mb-2">
+                        <strong>Talep No:</strong><br>
+                        @Model.TicketNumber
+                    </p>
+                    <p class="mb-2">
+                        <strong>Durum:</strong><br>
+                        <span class="badge bg-@(Model.Status switch {
+                            "Open" => "success",
+                            "Waiting" => "warning",
+                            "Answered" => "info",
+                            "Closed" => "secondary",
+                            _ => "secondary"
+                        })">@Model.Status</span>
+                    </p>
+                    <p class="mb-2">
+                        <strong>Öncelik:</strong><br>
+                        @Model.Priority
+                    </p>
+                    <p class="mb-2">
+                        <strong>E-posta:</strong><br>
+                        @Model.Email
+                    </p>
+                    <p class="mb-2">
+                        <strong>Oluşturulma Tarihi:</strong><br>
+                        @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                    </p>
+                    @if (Model.LastUpdatedAt.HasValue)
+                    {
+                        <p class="mb-0">
+                            <strong>Son Güncelleme:</strong><br>
+                            @Model.LastUpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")
+                        </p>
+                    }
+
+                    @if (isAdmin && Model.Status != "Closed")
+                    {
+                        <hr />
+                        <form asp-action="UpdateStatus" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Durum Güncelle</label>
+                                <select name="status" class="form-select">
+                                    <option value="Open" selected="@(Model.Status == "Open")">Açık</option>
+                                    <option value="Waiting" selected="@(Model.Status == "Waiting")">Beklemede</option>
+                                    <option value="Answered" selected="@(Model.Status == "Answered")">Yanıtlandı</option>
+                                    <option value="Closed" selected="@(Model.Status == "Closed")">Kapalı</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-arrow-clockwise"></i> Durumu Güncelle
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            setTimeout(function () {
+                $('.alert').fadeOut('slow');
+            }, 3000);
+        });
+    </script>
+} 

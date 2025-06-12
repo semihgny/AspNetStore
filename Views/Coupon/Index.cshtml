@@ -1,0 +1,98 @@
+@model IEnumerable<aspnet.Models.Coupon>
+
+@{
+    ViewData["Title"] = "Kuponlar";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Kuponlar</h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Yeni Kupon
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Henüz kupon bulunmamaktadır.
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Kod</th>
+                                <th>İndirim</th>
+                                <th>Min. Sepet</th>
+                                <th>Başlangıç</th>
+                                <th>Bitiş</th>
+                                <th>Kullanım Limiti</th>
+                                <th>Durum</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var coupon in Model)
+                            {
+                                <tr>
+                                    <td>@coupon.Code</td>
+                                    <td>
+                                        @if (coupon.DiscountType == "Percentage")
+                                        {
+                                            @($"%{coupon.DiscountAmount:N0}")
+                                        }
+                                        else
+                                        {
+                                            @coupon.DiscountAmount.ToString("C")
+                                        }
+                                    </td>
+                                    <td>@coupon.MinimumCartAmount.ToString("C")</td>
+                                    <td>@(coupon.StartDate.HasValue ? coupon.StartDate.Value.ToString("dd.MM.yyyy") : "-")</td>
+                                    <td>@(coupon.EndDate.HasValue ? coupon.EndDate.Value.ToString("dd.MM.yyyy") : "-")</td>
+                                    <td>@(coupon.UsageLimit > 0 ? coupon.UsageLimit.ToString() : "Limitsiz")</td>
+                                    <td>
+                                        <span class="badge bg-@(coupon.IsActive ? "success" : "danger")">
+                                            @(coupon.IsActive ? "Aktif" : "Pasif")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Edit" asp-route-id="@coupon.Id" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="ToggleStatus" asp-route-id="@coupon.Id" 
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-@(coupon.IsActive ? "danger" : "success") btn-sm">
+                                                    <i class="bi bi-@(coupon.IsActive ? "toggle-off" : "toggle-on")"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#couponsTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Turkish.json"
+                }
+            });
+        });
+    </script>
+} 

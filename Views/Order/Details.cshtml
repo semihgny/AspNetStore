@@ -1,0 +1,89 @@
+@model aspnet.Models.Order
+@using aspnet.Models.Enums
+
+@{
+    ViewData["Title"] = "Sipariş Detayı";
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Siparişlerim</a></li>
+            <li class="breadcrumb-item active">Sipariş Detayı</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h4 class="card-title mb-1">Sipariş #@Model.OrderNumber</h4>
+                            <p class="text-muted mb-0">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                        </div>
+                        <span class="badge bg-@(Model.Status switch {
+                            OrderStatus.Pending => "warning",
+                            OrderStatus.Processing => "info",
+                            OrderStatus.Shipped => "primary",
+                            OrderStatus.Delivered => "success",
+                            OrderStatus.Cancelled => "danger",
+                            _ => "secondary"
+                        }) fs-6">@Model.Status</span>
+                    </div>
+
+                    <h5 class="mb-3">Ürünler</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ürün</th>
+                                    <th class="text-end">Birim Fiyat</th>
+                                    <th class="text-end">Adet</th>
+                                    <th class="text-end">Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.OrderDetails)
+                                {
+                                    <tr>
+                                        <td>@item.Product.Name</td>
+                                        <td class="text-end">@item.UnitPrice.ToString("C2")</td>
+                                        <td class="text-end">@item.Quantity</td>
+                                        <td class="text-end">@((item.UnitPrice * item.Quantity).ToString("C2"))</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Toplam</strong></td>
+                                    <td class="text-end"><strong>@Model.TotalAmount.ToString("C2")</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Teslimat Bilgileri</h5>
+                    <p class="mb-1"><strong>Ad Soyad:</strong> @Model.FirstName @Model.LastName</p>
+                    <p class="mb-1"><strong>E-posta:</strong> @Model.Email</p>
+                    <p class="mb-1"><strong>Telefon:</strong> @Model.Phone</p>
+                    <p class="mb-1"><strong>Adres:</strong> @Model.Address</p>
+                    <p class="mb-1"><strong>İlçe/İl:</strong> @Model.District/@Model.City</p>
+                    <p class="mb-0"><strong>Posta Kodu:</strong> @Model.PostalCode</p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Ödeme Bilgileri</h5>
+                    <p class="mb-1"><strong>Ödeme Yöntemi:</strong> @Model.PaymentMethod</p>
+                    <p class="mb-0"><strong>Ödeme Durumu:</strong> @Model.PaymentStatus</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

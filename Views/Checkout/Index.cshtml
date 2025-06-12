@@ -1,0 +1,158 @@
+@model aspnet.Models.ViewModels.CheckoutViewModel
+
+@{
+    ViewData["Title"] = "Ödeme";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Sipariş Bilgileri</h4>
+                    <form asp-action="PlaceOrder" method="post" id="checkoutForm">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FirstName" class="form-label"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LastName" class="form-label"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Phone" class="form-label"></label>
+                                <input asp-for="Phone" class="form-control" />
+                                <span asp-validation-for="Phone" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="City" class="form-label"></label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="District" class="form-label"></label>
+                                <input asp-for="District" class="form-control" />
+                                <span asp-validation-for="District" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="PostalCode" class="form-label"></label>
+                                <input asp-for="PostalCode" class="form-control" />
+                                <span asp-validation-for="PostalCode" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="PaymentMethod" class="form-label"></label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="PaymentMethod" id="cashOnDelivery" value="CashOnDelivery" checked>
+                                <label class="form-check-label" for="cashOnDelivery">
+                                    Kapıda Ödeme
+                                </label>
+                            </div>
+                            <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="submitButton">
+                            Siparişi Tamamla
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Sipariş Özeti</h4>
+                    @if (Model.CartItems != null && Model.CartItems.Any())
+                    {
+                        @foreach (var item in Model.CartItems)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0">@item.Product.Name</h6>
+                                    <small class="text-muted">@item.Quantity adet</small>
+                                </div>
+                                <span>@((item.Quantity * item.Product.Price).ToString("C2"))</span>
+                            </div>
+                        }
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Ara Toplam</h5>
+                            <h5 class="mb-0">@(Model.CartItems.Sum(x => x.Quantity * x.Product.Price).ToString("C2"))</h5>
+                        </div>
+
+                        @if (string.IsNullOrEmpty(Model.Cart?.AppliedCouponCode))
+                        {
+                            <div class="mt-3">
+                                <form asp-controller="Cart" asp-action="ApplyCoupon" method="post" class="d-flex gap-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="text" name="couponCode" class="form-control" placeholder="Kupon Kodu" required>
+                                    <button type="submit" class="btn btn-outline-primary">Uygula</button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex justify-content-between align-items-center text-success mt-2">
+                                <div>
+                                    <h5 class="mb-0">İndirim</h5>
+                                    <small>(@Model.Cart.AppliedCouponCode)</small>
+                                </div>
+                                <h5 class="mb-0">-@(Model.Cart.DiscountAmount.ToString("C2"))</h5>
+                            </div>
+                            <form asp-controller="Cart" asp-action="RemoveCoupon" method="post" class="mt-2">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">Kuponu Kaldır</button>
+                            </form>
+                        }
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <h5 class="mb-0">Genel Toplam</h5>
+                            <h5 class="mb-0">@(Model.Cart?.TotalAmount.ToString("C2") ?? Model.CartItems.Sum(x => x.Quantity * x.Product.Price).ToString("C2"))</h5>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Sepetinizde ürün bulunmamaktadır.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function () {
+            $('#checkoutForm').on('submit', function () {
+                $('#submitButton').prop('disabled', true);
+                $('#submitButton').html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> İşleniyor...');
+            });
+        });
+    </script>
+} 
